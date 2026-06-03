@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EMS - Employee Directory</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Employee Management System</h1>
+        <p>Manage and browse corporate employee records</p>
+    </header>
+
+    <!-- Top Navigation Bar -->
+    <nav class="navbar">
+        <a href="/" class="active">View All Employees</a>
+        <a href="/create">Register Employee</a>
+        <a href="/update">Update Employee</a>
+        <a href="/search">Search Employee</a>
+    </nav>
+
+    <!-- Alert Box -->
+    <div id="statusMessage" class="alert"></div>
+
+    <!-- Employee Directory Card -->
+    <div class="card">
+        <h2>Employee Directory Listing</h2>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Department</th>
+                        <th>Designation</th>
+                        <th>Salary</th>
+                        <th>Joining Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="employeeTableBody">
+                    <tr>
+                        <td colspan="9" style="text-align: center;">Loading employee records...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const apiUrl = '/api/employees/';
+
+    // Show temporary status messages
+    function showMessage(msg, isError = false) {
+        const status = document.getElementById('statusMessage');
+        status.textContent = msg;
+        status.style.display = 'block';
+        status.className = `alert ${isError ? 'alert-danger' : 'alert-success'}`;
+        setTimeout(() => { status.style.display = 'none'; }, 4000);
+    }
+
+
+    async function loadEmployees() {
+        const tbody = document.getElementById('employeeTableBody');
+        try {
+            const res = await fetch(apiUrl);
+            const data = await res.json();
+            
+            tbody.innerHTML = '';
+            
+            if (!Array.isArray(data) || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center;">No employee records found.</td></tr>';
+                return;
+            }
+
+            data.forEach(emp => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>#${emp.Employee_ID}</strong></td>
+                        <td>${emp.Employee_Name}</td>
+                        <td>${emp.Email}</td>
+                        <td>${emp.Phone_Number}</td>
+                        <td>${emp.Department}</td>
+                        <td>${emp.Designation}</td>
+                        <td>₹${emp.Salary.toLocaleString()}</td>
+                        <td>${emp.Joining_Date}</td>
+                        <td class="btn-group">
+                            <a href="/update?id=${emp.Employee_ID}" class="btn btn-sm btn-secondary" style="text-decoration: none;">Edit</a>
+                            <button class="btn btn-sm btn-danger" onclick="deleteEmployee(${emp.Employee_ID})">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        } catch (error) {
+            showMessage("Failed to load employees from database.", true);
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: red;">Error connecting to backend API.</td></tr>';
+        }
+    }
+
+    // Delete Employee record
+    async function deleteEmployee(id) {
+        if (!confirm(`Are you sure you want to delete employee #${id}?`)) return;
+        try {
+            const res = await fetch(apiUrl + id, { method: 'DELETE' });
+            if (res.ok) {
+                showMessage("Employee deleted successfully!");
+                loadEmployees();
+            } else {
+                showMessage("Failed to delete the record.", true);
+            }
+        } catch (error) {
+            showMessage("Error during deletion.", true);
+        }
+    }
+
+
+    window.onload = loadEmployees;
+</script>
+</body>
+</html>
